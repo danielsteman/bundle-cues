@@ -30,6 +30,8 @@ func resolveIncludes() {
 }
 
 func main() {
+    resolveIncludes() 
+        
 	ctx := cuecontext.New()
 	insts := load.Instances([]string{"."}, nil)
 	v := ctx.BuildInstance(insts[0])
