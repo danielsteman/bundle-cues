@@ -1,2 +1,4 @@
 include:
   - "*.yml"
+targets:
+  dev:
