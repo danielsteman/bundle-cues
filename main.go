@@ -11,6 +11,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type BundleSpec struct {
+	Include []string `yaml:"include"`
+}
+
 func check(e error) {
 	if e != nil {
 		log.Fatal(e)
@@ -24,14 +28,16 @@ func resolveIncludes() {
 	data, err := io.ReadAll(file)
 	check(err)
 
-	m := make(map[string]interface{})
-	err = yaml.Unmarshal(data, &m)
+	spec := BundleSpec{}
+	err = yaml.Unmarshal(data, &spec)
 	check(err)
+
+	fmt.Printf("%+v\n", spec)
 }
 
 func main() {
-    resolveIncludes() 
-        
+	resolveIncludes()
+
 	ctx := cuecontext.New()
 	insts := load.Instances([]string{"."}, nil)
 	v := ctx.BuildInstance(insts[0])
