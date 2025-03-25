@@ -45,8 +45,6 @@ func getIncludes() ([]string, error) {
 			log.Fatalf("Only yml files can be included, path is too short: %s", path)
 		}
 	}
-
-	fmt.Printf("%+v\n", spec.Include)
 	return spec.Include, nil
 }
 
