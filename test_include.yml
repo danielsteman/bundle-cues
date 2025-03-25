@@ -1,5 +1,4 @@
 resources:
-  some_includes_resource:
-    a: 1
-    b: 2
-    c: 3
+  jobs:
+    job123:
+      name: job123

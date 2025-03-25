@@ -5,4 +5,10 @@ resources:
     pipelines:
         - sup
 targets:
-    dev: null
+    prod:
+        resources:
+            jobs:
+                some_job:
+                    webhook_notifications:
+                        on_failure:
+                            - id: suuuup

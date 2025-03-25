@@ -1,3 +1,13 @@
 resources:
-  pipelines:
-    - yall
+  jobs:
+    some_job:
+      name: yooooo
+
+targets:
+  prod:
+    resources:
+      jobs:
+        some_job:
+          webhook_notifications:
+            on_failure:
+              - id: suuuup

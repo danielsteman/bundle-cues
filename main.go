@@ -74,16 +74,18 @@ func unifyConfigs(paths []string) (map[string]interface{}, error) {
 		err = yaml.Unmarshal(bs, &override)
 		check(err)
 
+		fmt.Printf("%v\n", override)
+
 		for k, v := range override {
 			master[k] = v
 		}
 	}
 
-    bs, err = yaml.Marshal(master)
-    check(err)
+	bs, err = yaml.Marshal(master)
+	check(err)
 
-    err = os.WriteFile("merged.yaml", bs, 0644)
-    check(err)
+	err = os.WriteFile("merged.yaml", bs, 0644)
+	check(err)
 
 	return master, nil
 }
@@ -91,11 +93,11 @@ func unifyConfigs(paths []string) (map[string]interface{}, error) {
 func main() {
 	includes, err := getIncludes()
 	check(err)
-	fmt.Printf("%v\n", includes)
+	fmt.Printf("\n%v\n\n", includes)
 
 	config, err := unifyConfigs(includes)
 	check(err)
-	fmt.Printf("%v\n", config)
+	fmt.Printf("\n%v\n", config)
 
 	ctx := cuecontext.New()
 	insts := load.Instances([]string{"."}, nil)
