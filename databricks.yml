@@ -1,6 +1,5 @@
 include:
   - "*.yml"
   - "resources/*.yml"
-  - "a"
 targets:
   dev:

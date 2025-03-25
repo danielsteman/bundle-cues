@@ -22,7 +22,7 @@ func check(e error) {
 	}
 }
 
-func getIncludes() {
+func getIncludes() ([]string, error) {
 	file, err := os.Open("databricks.yml")
 	check(err)
 	defer file.Close()
@@ -47,10 +47,13 @@ func getIncludes() {
 	}
 
 	fmt.Printf("%+v\n", spec.Include)
+	return spec.Include, nil
 }
 
 func main() {
-	getIncludes()
+	includes, err := getIncludes()
+	check(err)
+	fmt.Printf("%v\n", includes)
 
 	ctx := cuecontext.New()
 	insts := load.Instances([]string{"."}, nil)
