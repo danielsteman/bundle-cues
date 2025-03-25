@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/load"
@@ -21,7 +22,7 @@ func check(e error) {
 	}
 }
 
-func resolveIncludes() {
+func getIncludes() {
 	file, err := os.Open("databricks.yml")
 	check(err)
 	defer file.Close()
@@ -31,15 +32,19 @@ func resolveIncludes() {
 	spec := BundleSpec{}
 	err = yaml.Unmarshal(data, &spec)
 	check(err)
-
-	fmt.Printf("%+v\n", spec)
+    
+	fmt.Printf("%+v\n", spec.Include)
 }
 
 func main() {
-	resolveIncludes()
+	getIncludes()
 
 	ctx := cuecontext.New()
 	insts := load.Instances([]string{"."}, nil)
 	v := ctx.BuildInstance(insts[0])
 	fmt.Printf("%v\n", v)
+
+	paths, err := filepath.Glob("*.yml")
+	check(err)
+	fmt.Printf("%v\n", paths)
 }
