@@ -58,9 +58,34 @@ func getIncludes() ([]string, error) {
 	return include_paths, nil
 }
 
-func unifyConfigs(paths []string) {
-	// var master map[string]interface{}
-	// bs, err := os.ReadFile("databricks.yml")
+func unifyConfigs(paths []string) (map[string]interface{}, error) {
+	var master map[string]interface{}
+	bs, err := os.ReadFile("databricks.yml")
+	check(err)
+
+	err = yaml.Unmarshal(bs, &master)
+	check(err)
+
+	for _, path := range paths {
+		bs, err := os.ReadFile(path)
+		check(err)
+
+		var override map[string]interface{}
+		err = yaml.Unmarshal(bs, &override)
+		check(err)
+
+		for k, v := range override {
+			master[k] = v
+		}
+	}
+
+    bs, err = yaml.Marshal(master)
+    check(err)
+
+    err = os.WriteFile("merged.yaml", bs, 0644)
+    check(err)
+
+	return master, nil
 }
 
 func main() {
@@ -68,10 +93,11 @@ func main() {
 	check(err)
 	fmt.Printf("%v\n", includes)
 
-	unifyConfigs(includes)
+	config, err := unifyConfigs(includes)
+	check(err)
+	fmt.Printf("%v\n", config)
 
 	ctx := cuecontext.New()
 	insts := load.Instances([]string{"."}, nil)
 	ctx.BuildInstance(insts[0])
-
 }

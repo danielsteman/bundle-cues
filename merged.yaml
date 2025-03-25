@@ -1,0 +1,8 @@
+include:
+    - test_include.yml
+    - resources/*.yml
+resources:
+    pipelines:
+        - sup
+targets:
+    dev: null

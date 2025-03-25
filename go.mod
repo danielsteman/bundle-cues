@@ -2,7 +2,10 @@ module github.com/danielsteman/bundle-cues
 
 go 1.23.5
 
-require cuelang.org/go v0.12.0
+require (
+	cuelang.org/go v0.12.0
+	gopkg.in/yaml.v3 v3.0.1
+)
 
 require (
 	cuelabs.dev/go/oci/ociregistry v0.0.0-20241125120445-2c00c104c6e1 // indirect
@@ -19,5 +22,4 @@ require (
 	golang.org/x/net v0.34.0 // indirect
 	golang.org/x/oauth2 v0.25.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
