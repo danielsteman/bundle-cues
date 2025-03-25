@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -23,10 +22,7 @@ func check(e error) {
 }
 
 func getIncludes() ([]string, error) {
-	file, err := os.Open("databricks.yml")
-	check(err)
-	defer file.Close()
-	data, err := io.ReadAll(file)
+	data, err := os.ReadFile("databricks.yml")
 	check(err)
 
 	spec := BundleSpec{}
@@ -62,10 +58,17 @@ func getIncludes() ([]string, error) {
 	return include_paths, nil
 }
 
+func unifyConfigs(paths []string) {
+	// var master map[string]interface{}
+	// bs, err := os.ReadFile("databricks.yml")
+}
+
 func main() {
 	includes, err := getIncludes()
 	check(err)
 	fmt.Printf("%v\n", includes)
+
+	unifyConfigs(includes)
 
 	ctx := cuecontext.New()
 	insts := load.Instances([]string{"."}, nil)
