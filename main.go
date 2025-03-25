@@ -33,19 +33,33 @@ func getIncludes() ([]string, error) {
 	err = yaml.Unmarshal(data, &spec)
 	check(err)
 
-	includes := spec.Include
-	for _, path := range includes {
+	include_patterns := spec.Include
+
+	var include_paths []string
+	var seen map[string]bool
+
+	for _, path := range include_patterns {
 		yml_extension := "yml"
 		if len(path) > len(yml_extension) {
 			extension := path[len(path)-3:]
 			if extension != "yml" {
 				log.Fatal("Only yml files can be included")
 			}
+
+			glob_paths, err := filepath.Glob(path)
+			check(err)
+
+			for _, path := range glob_paths {
+				if seen[path] == false {
+					include_paths = append(include_paths, path)
+				}
+			}
+
 		} else {
 			log.Fatalf("Only yml files can be included, path is too short: %s", path)
 		}
 	}
-	return spec.Include, nil
+	return include_paths, nil
 }
 
 func main() {
@@ -55,10 +69,6 @@ func main() {
 
 	ctx := cuecontext.New()
 	insts := load.Instances([]string{"."}, nil)
-	v := ctx.BuildInstance(insts[0])
-	fmt.Printf("%v\n", v)
+	ctx.BuildInstance(insts[0])
 
-	paths, err := filepath.Glob("*.yml")
-	check(err)
-	fmt.Printf("%v\n", paths)
 }
