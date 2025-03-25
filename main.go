@@ -32,7 +32,16 @@ func getIncludes() {
 	spec := BundleSpec{}
 	err = yaml.Unmarshal(data, &spec)
 	check(err)
-    
+
+	includes := spec.Include
+	for _, path := range includes {
+		extension := path[len(path)-3:]
+        fmt.Print(extension)
+		if extension != ".yml" {
+			log.Fatal("Only yml files can be included")
+		}
+	}
+
 	fmt.Printf("%+v\n", spec.Include)
 }
 
