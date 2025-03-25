@@ -35,10 +35,14 @@ func getIncludes() {
 
 	includes := spec.Include
 	for _, path := range includes {
-		extension := path[len(path)-3:]
-        fmt.Print(extension)
-		if extension != ".yml" {
-			log.Fatal("Only yml files can be included")
+		yml_extension := "yml"
+		if len(path) > len(yml_extension) {
+			extension := path[len(path)-3:]
+			if extension != "yml" {
+				log.Fatal("Only yml files can be included")
+			}
+		} else {
+			log.Fatalf("Only yml files can be included, path is too short: %s", path)
 		}
 	}
 
