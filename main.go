@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -15,91 +16,134 @@ type BundleSpec struct {
 	Include []string `yaml:"include"`
 }
 
-func check(e error) {
-	if e != nil {
-		log.Fatal(e)
-	}
-}
-
 func getIncludes() ([]string, error) {
 	data, err := os.ReadFile("databricks.yml")
-	check(err)
-
+	if err != nil {
+		return nil, fmt.Errorf("failed to read databricks.yml: %w", err)
+	}
 	spec := BundleSpec{}
-	err = yaml.Unmarshal(data, &spec)
-	check(err)
-
-	include_patterns := spec.Include
-
-	var include_paths []string
-	var seen map[string]bool
-
-	for _, path := range include_patterns {
-		yml_extension := "yml"
-		if len(path) > len(yml_extension) {
-			extension := path[len(path)-3:]
-			if extension != "yml" {
-				log.Fatal("Only yml files can be included")
+	if err := yaml.Unmarshal(data, &spec); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal databricks.yml: %w", err)
+	}
+	var includePaths []string
+	seen := make(map[string]bool)
+	for _, pattern := range spec.Include {
+		if len(pattern) < 4 {
+			return nil, fmt.Errorf("include pattern is too short: %q", pattern)
+		}
+		if filepath.Ext(pattern) != ".yml" {
+			return nil, fmt.Errorf("only .yml files can be included: %q", pattern)
+		}
+		globPaths, err := filepath.Glob(pattern)
+		if err != nil {
+			return nil, fmt.Errorf("invalid glob pattern %q: %w", pattern, err)
+		}
+		for _, p := range globPaths {
+			if !seen[p] {
+				seen[p] = true
+				includePaths = append(includePaths, p)
 			}
-
-			glob_paths, err := filepath.Glob(path)
-			check(err)
-
-			for _, path := range glob_paths {
-				if seen[path] == false {
-					include_paths = append(include_paths, path)
-				}
-			}
-
-		} else {
-			log.Fatalf("Only yml files can be included, path is too short: %s", path)
 		}
 	}
-	return include_paths, nil
+	return includePaths, nil
 }
 
-func unifyConfigs(paths []string) (map[string]interface{}, error) {
-	var master map[string]interface{}
-	bs, err := os.ReadFile("databricks.yml")
-	check(err)
+func nodesEqual(l, r *yaml.Node) bool {
+	if l.Kind == yaml.ScalarNode && r.Kind == yaml.ScalarNode {
+		return l.Value == r.Value
+	}
+	panic("equals on non-scalars not implemented!")
+}
 
-	err = yaml.Unmarshal(bs, &master)
-	check(err)
+func recursiveMerge(from, into *yaml.Node) error {
+	if from.Kind != into.Kind {
+		return fmt.Errorf("cannot merge nodes of different kinds (%v vs %v)", from.Kind, into.Kind)
+	}
+	switch from.Kind {
+	case yaml.MappingNode:
+		for i := 0; i < len(from.Content); i += 2 {
+			fromKey := from.Content[i]
+			fromVal := from.Content[i+1]
+			found := false
+			for j := 0; j < len(into.Content); j += 2 {
+				intoKey := into.Content[j]
+				intoVal := into.Content[j+1]
+				if nodesEqual(fromKey, intoKey) {
+					found = true
+					if err := recursiveMerge(fromVal, intoVal); err != nil {
+						return fmt.Errorf("error merging key %q: %w", fromKey.Value, err)
+					}
+					break
+				}
+			}
+			if !found {
+				into.Content = append(into.Content, fromKey, fromVal)
+			}
+		}
+	case yaml.SequenceNode:
+		into.Content = append(into.Content, from.Content...)
+	case yaml.DocumentNode:
+		if len(from.Content) == 0 || len(into.Content) == 0 {
+			return errors.New("unexpected empty content in document node")
+		}
+		return recursiveMerge(from.Content[0], into.Content[0])
+	default:
+		return errors.New("can only merge mapping, sequence, or document nodes")
+	}
+	return nil
+}
 
-	for _, path := range paths {
+func unifyConfigs(includePaths []string) (*yaml.Node, error) {
+	var master yaml.Node
+	baseData, err := os.ReadFile("databricks.yml")
+	if err != nil {
+		return nil, fmt.Errorf("failed to read databricks.yml: %w", err)
+	}
+	if err := yaml.Unmarshal(baseData, &master); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal databricks.yml: %w", err)
+	}
+	for _, path := range includePaths {
+		fmt.Printf("Merging file: %s\n", path)
+		var override yaml.Node
 		bs, err := os.ReadFile(path)
-		check(err)
-
-		var override map[string]interface{}
-		err = yaml.Unmarshal(bs, &override)
-		check(err)
-
-		fmt.Printf("%v\n", override)
-
-		for k, v := range override {
-			master[k] = v
+		if err != nil {
+			return nil, fmt.Errorf("failed to read include file %q: %w", path, err)
+		}
+		if err := yaml.Unmarshal(bs, &override); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal include file %q: %w", path, err)
+		}
+		if err := recursiveMerge(&override, &master); err != nil {
+			return nil, fmt.Errorf("failed to merge file %q: %w", path, err)
 		}
 	}
-
-	bs, err = yaml.Marshal(master)
-	check(err)
-
-	err = os.WriteFile("merged.yaml", bs, 0644)
-	check(err)
-
-	return master, nil
+	mergedOut, err := yaml.Marshal(&master)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal merged result: %w", err)
+	}
+	if err := os.WriteFile("merged.yaml", mergedOut, 0o644); err != nil {
+		return nil, fmt.Errorf("failed to write merged.yaml: %w", err)
+	}
+	return &master, nil
 }
 
 func main() {
 	includes, err := getIncludes()
-	check(err)
-	fmt.Printf("\n%v\n\n", includes)
-
-	config, err := unifyConfigs(includes)
-	check(err)
-	fmt.Printf("\n%v\n", config)
-
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Found includes: %v\n\n", includes)
+	finalConfig, err := unifyConfigs(includes)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Final merged config as *yaml.Node:\n%+v\n\n", finalConfig)
 	ctx := cuecontext.New()
 	insts := load.Instances([]string{"."}, nil)
-	ctx.BuildInstance(insts[0])
+	if len(insts) > 0 && insts[0] != nil {
+		val := ctx.BuildInstance(insts[0])
+		if val.Err() != nil {
+			log.Printf("CUE validation error: %v", val.Err())
+		}
+	}
 }
+
