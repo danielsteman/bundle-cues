@@ -9,6 +9,7 @@ targets:
                 some_job:
                     webhook_notifications:
                         on_failure:
+                            - id: suuuup
 resources:
     jobs:
         job123:

@@ -5,5 +5,5 @@ Cues for Databricks asset bundles. To idea is to parse the `databricks.yml` in t
 ## Example usage
 
 ```bash
-cue merged.yaml validate.cue
+cue vet merged.yaml validate.cue
 ```
