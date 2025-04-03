@@ -126,6 +126,26 @@ func unifyConfigs(includePaths []string) (*yaml.Node, error) {
 	return &master, nil
 }
 
+func validate(configPath string) {
+	includes, err := getIncludes()
+	if err != nil {
+		log.Fatal(err)
+	}
+	finalConfig, err := unifyConfigs(includes)
+	if err != nil {
+		log.Fatal(err)
+	}
+	ctx := cuecontext.New()
+	insts := load.Instances([]string{configPath}, nil)
+
+	if len(insts) > 0 && insts[0] != nil {
+		val := ctx.BuildInstance(insts[0])
+		if val.Err() != nil {
+			log.Printf("CUE validation error: %v", val.Err())
+		}
+	}
+}
+
 func main() {
 	includes, err := getIncludes()
 	if err != nil {
