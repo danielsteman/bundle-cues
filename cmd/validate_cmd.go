@@ -137,6 +137,7 @@ func validate(schemaPath string) {
 	if err != nil {
 		log.Fatalf("Failed to marshal final config: %v", err)
 	}
+	fmt.Println(string(mergedYAML))
 
 	// Create a new CUE context
 	ctx := cuecontext.New()
