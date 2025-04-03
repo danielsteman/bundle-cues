@@ -116,34 +116,53 @@ func unifyConfigs(includePaths []string) (*yaml.Node, error) {
 			return nil, fmt.Errorf("failed to merge file %q: %w", path, err)
 		}
 	}
-	mergedOut, err := yaml.Marshal(&master)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal merged result: %w", err)
-	}
-	if err := os.WriteFile("merged.yaml", mergedOut, 0o644); err != nil {
-		return nil, fmt.Errorf("failed to write merged.yaml: %w", err)
-	}
 	return &master, nil
 }
 
-func validate(configPath string) {
+func validate(schemaPath string) {
 	includes, err := getIncludes()
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// Merge all YML files (including databricks.yml) into one YAML node
 	finalConfig, err := unifyConfigs(includes)
 	if err != nil {
 		log.Fatal(err)
 	}
-	ctx := cuecontext.New()
-	insts := load.Instances([]string{configPath}, nil)
 
-	if len(insts) > 0 && insts[0] != nil {
-		val := ctx.BuildInstance(insts[0])
-		if val.Err() != nil {
-			log.Printf("CUE validation error: %v", val.Err())
-		}
+	// Marshal the final merged YAML node into bytes (in memory)
+	mergedYAML, err := yaml.Marshal(finalConfig)
+	if err != nil {
+		log.Fatalf("Failed to marshal final config: %v", err)
 	}
+
+	// Create a new CUE context
+	ctx := cuecontext.New()
+
+	// 1) Load the schema from schemaPath as a CUE instance
+	schemaInsts := load.Instances([]string{schemaPath}, nil)
+	if len(schemaInsts) == 0 || schemaInsts[0] == nil {
+		log.Fatalf("No CUE instance found for schema %q", schemaPath)
+	}
+	schemaVal := ctx.BuildInstance(schemaInsts[0])
+	if err := schemaVal.Err(); err != nil {
+		log.Fatalf("CUE build error in schema: %v", err)
+	}
+
+	// 2) Compile the merged YAML data into a CUE Value
+	dataVal := ctx.CompileBytes(mergedYAML)
+	if err := dataVal.Err(); err != nil {
+		log.Fatalf("CUE compile error in merged data: %v", err)
+	}
+
+	// 3) Unify the schema and the data for validation
+	result := schemaVal.Unify(dataVal)
+	if err := result.Err(); err != nil {
+		log.Fatalf("Validation failed: %v", err)
+	}
+
+	fmt.Println("Validation successful!")
 }
 
 func main() {
