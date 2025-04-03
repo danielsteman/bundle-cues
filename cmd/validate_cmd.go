@@ -176,9 +176,6 @@ can contain custom rules and constraints for your bundle.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		schemaPath := args[0]
 
-		// Call your validate(schemaPath) function from validate.go.
-		// If validate.go is in the same package (cmd), ensure the function name is exported (e.g. Validate).
-		// If it's in a different package, import that package and call it here.
 		validate(schemaPath)
 	},
 }
