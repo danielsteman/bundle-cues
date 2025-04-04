@@ -126,23 +126,19 @@ func validate(schemaPath string) {
 		log.Fatal(err)
 	}
 
-	// Merge all YML files (including databricks.yml) into one YAML node
 	finalConfig, err := unifyConfigs(includes)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Marshal the final merged YAML node into bytes (in memory)
 	mergedYAML, err := yaml.Marshal(finalConfig)
 	if err != nil {
 		log.Fatalf("Failed to marshal final config: %v", err)
 	}
 	fmt.Println(string(mergedYAML))
 
-	// Create a new CUE context
 	ctx := cuecontext.New()
 
-	// 1) Load the schema from schemaPath as a CUE instance
 	schemaInsts := load.Instances([]string{schemaPath}, nil)
 	if len(schemaInsts) == 0 || schemaInsts[0] == nil {
 		log.Fatalf("No CUE instance found for schema %q", schemaPath)
@@ -152,13 +148,11 @@ func validate(schemaPath string) {
 		log.Fatalf("CUE build error in schema: %v", err)
 	}
 
-	// 2) Compile the merged YAML data into a CUE Value
 	dataVal := ctx.CompileBytes(mergedYAML)
 	if err := dataVal.Err(); err != nil {
 		log.Fatalf("CUE compile error in merged data: %v", err)
 	}
 
-	// 3) Unify the schema and the data for validation
 	result := schemaVal.Unify(dataVal)
 	if err := result.Err(); err != nil {
 		log.Fatalf("Validation failed: %v", err)
