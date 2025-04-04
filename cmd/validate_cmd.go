@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -55,7 +56,6 @@ func nodesEqual(l, r *yaml.Node) bool {
 	}
 	panic("equals on non-scalars not implemented!")
 }
-
 
 func recursiveMerge(from, into *yaml.Node) error {
 	if from.Kind != into.Kind {
@@ -152,17 +152,28 @@ func validate(schemaPath string) {
 		log.Fatal(err)
 	}
 
+	for i := 0; i < len(finalConfig.Content[0].Content); i += 2 {
+		key := finalConfig.Content[0].Content[i]
+		fmt.Printf("Top-level key: %s\n", key.Value)
+	}
+
 	mergedYAML, err := yaml.Marshal(finalConfig)
 	if err != nil {
 		log.Fatalf("Failed to marshal final config: %v", err)
 	}
 	fmt.Println(string(mergedYAML))
 
-	ctx := cuecontext.New()
+	intermediate := make(map[string]interface{})
+	if err := yaml.Unmarshal(mergedYAML, &intermediate); err != nil {
+		log.Fatalf("Failed to unmarshal YAML: %v", err)
+	}
 
-	cueVal := ctx.CompileBytes(mergedYAML)
-	fmt.Println("Generated CUE:")
-	fmt.Println(cueVal.Syntax())
+	jsonBytes, err := json.Marshal(intermediate)
+	if err != nil {
+		log.Fatalf("Failed to convert YAML to JSON: %v", err)
+	}
+
+	ctx := cuecontext.New()
 
 	schemaInsts := load.Instances([]string{schemaPath}, nil)
 	if len(schemaInsts) == 0 || schemaInsts[0] == nil {
@@ -173,7 +184,7 @@ func validate(schemaPath string) {
 		log.Fatalf("CUE build error in schema: %v", err)
 	}
 
-	dataVal := ctx.CompileBytes(mergedYAML)
+	dataVal := ctx.CompileBytes(jsonBytes)
 	if err := dataVal.Err(); err != nil {
 		log.Fatalf("CUE compile error in merged data: %v", err)
 	}
