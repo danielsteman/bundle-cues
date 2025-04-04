@@ -7,3 +7,13 @@ Cues for Databricks asset bundles. To idea is to parse the `databricks.yml` in t
 ```bash
 cue vet merged.yaml validate.cue
 ```
+
+## Build
+
+```bash
+GOOS=darwin GOARCH=arm64 go build -o bundlecues
+tar -czvf bundlecues_1.0.0_darwin_arm64.tar.gz bundlecues
+
+GOOS=darwin GOARCH=amd64 go build -o bundlecues
+tar -czvf bundlecues_1.0.0_darwin_amd64.tar.gz bundlecues
+```
