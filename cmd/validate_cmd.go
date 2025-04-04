@@ -152,16 +152,10 @@ func validate(schemaPath string) {
 		log.Fatal(err)
 	}
 
-	for i := 0; i < len(finalConfig.Content[0].Content); i += 2 {
-		key := finalConfig.Content[0].Content[i]
-		fmt.Printf("Top-level key: %s\n", key.Value)
-	}
-
 	mergedYAML, err := yaml.Marshal(finalConfig)
 	if err != nil {
 		log.Fatalf("Failed to marshal final config: %v", err)
 	}
-	fmt.Println(string(mergedYAML))
 
 	intermediate := make(map[string]interface{})
 	if err := yaml.Unmarshal(mergedYAML, &intermediate); err != nil {
