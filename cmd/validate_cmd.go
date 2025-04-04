@@ -56,41 +56,62 @@ func nodesEqual(l, r *yaml.Node) bool {
 	panic("equals on non-scalars not implemented!")
 }
 
+
 func recursiveMerge(from, into *yaml.Node) error {
 	if from.Kind != into.Kind {
 		return fmt.Errorf("cannot merge nodes of different kinds (%v vs %v)", from.Kind, into.Kind)
 	}
+
 	switch from.Kind {
 	case yaml.MappingNode:
 		for i := 0; i < len(from.Content); i += 2 {
 			fromKey := from.Content[i]
 			fromVal := from.Content[i+1]
-			found := false
+
+			// Try to find matching key in 'into'
+			var found bool
 			for j := 0; j < len(into.Content); j += 2 {
 				intoKey := into.Content[j]
 				intoVal := into.Content[j+1]
+
 				if nodesEqual(fromKey, intoKey) {
 					found = true
-					if err := recursiveMerge(fromVal, intoVal); err != nil {
-						return fmt.Errorf("error merging key %q: %w", fromKey.Value, err)
+					// If both values are mappings, recursively merge
+					if fromVal.Kind == yaml.MappingNode && intoVal.Kind == yaml.MappingNode {
+						if err := recursiveMerge(fromVal, intoVal); err != nil {
+							return fmt.Errorf("error merging map for key %q: %w", fromKey.Value, err)
+						}
+					} else if fromVal.Kind == yaml.SequenceNode && intoVal.Kind == yaml.SequenceNode {
+						// Optionally deduplicate or just append
+						intoVal.Content = append(intoVal.Content, fromVal.Content...)
+					} else {
+						// Replace the value (scalar or different kinds)
+						into.Content[j+1] = fromVal
 					}
 					break
 				}
 			}
+
 			if !found {
+				// Key doesn't exist in 'into', append it
 				into.Content = append(into.Content, fromKey, fromVal)
 			}
 		}
+
 	case yaml.SequenceNode:
 		into.Content = append(into.Content, from.Content...)
+
 	case yaml.DocumentNode:
 		if len(from.Content) == 0 || len(into.Content) == 0 {
 			return errors.New("unexpected empty content in document node")
 		}
 		return recursiveMerge(from.Content[0], into.Content[0])
+
 	default:
-		return errors.New("can only merge mapping, sequence, or document nodes")
+		// For ScalarNode or other unsupported kinds
+		return fmt.Errorf("cannot merge node kind %v", from.Kind)
 	}
+
 	return nil
 }
 
@@ -138,6 +159,10 @@ func validate(schemaPath string) {
 	fmt.Println(string(mergedYAML))
 
 	ctx := cuecontext.New()
+
+	cueVal := ctx.CompileBytes(mergedYAML)
+	fmt.Println("Generated CUE:")
+	fmt.Println(cueVal.Syntax())
 
 	schemaInsts := load.Instances([]string{schemaPath}, nil)
 	if len(schemaInsts) == 0 || schemaInsts[0] == nil {
