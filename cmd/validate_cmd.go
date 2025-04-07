@@ -68,7 +68,6 @@ func recursiveMerge(from, into *yaml.Node) error {
 			fromKey := from.Content[i]
 			fromVal := from.Content[i+1]
 
-			// Try to find matching key in 'into'
 			var found bool
 			for j := 0; j < len(into.Content); j += 2 {
 				intoKey := into.Content[j]
@@ -76,16 +75,13 @@ func recursiveMerge(from, into *yaml.Node) error {
 
 				if nodesEqual(fromKey, intoKey) {
 					found = true
-					// If both values are mappings, recursively merge
 					if fromVal.Kind == yaml.MappingNode && intoVal.Kind == yaml.MappingNode {
 						if err := recursiveMerge(fromVal, intoVal); err != nil {
 							return fmt.Errorf("error merging map for key %q: %w", fromKey.Value, err)
 						}
 					} else if fromVal.Kind == yaml.SequenceNode && intoVal.Kind == yaml.SequenceNode {
-						// Optionally deduplicate or just append
 						intoVal.Content = append(intoVal.Content, fromVal.Content...)
 					} else {
-						// Replace the value (scalar or different kinds)
 						into.Content[j+1] = fromVal
 					}
 					break
@@ -93,7 +89,6 @@ func recursiveMerge(from, into *yaml.Node) error {
 			}
 
 			if !found {
-				// Key doesn't exist in 'into', append it
 				into.Content = append(into.Content, fromKey, fromVal)
 			}
 		}
@@ -108,7 +103,6 @@ func recursiveMerge(from, into *yaml.Node) error {
 		return recursiveMerge(from.Content[0], into.Content[0])
 
 	default:
-		// For ScalarNode or other unsupported kinds
 		return fmt.Errorf("cannot merge node kind %v", from.Kind)
 	}
 
@@ -156,6 +150,8 @@ func validate(schemaPath string) {
 	if err != nil {
 		log.Fatalf("Failed to marshal final config: %v", err)
 	}
+
+	fmt.Println(string(mergedYAML))
 
 	intermediate := make(map[string]interface{})
 	if err := yaml.Unmarshal(mergedYAML, &intermediate); err != nil {

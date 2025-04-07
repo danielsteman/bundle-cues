@@ -1,21 +1,20 @@
 #NonEmptyID: string & != ""
 
 #Job: {
-    webhook_notifications: {
-        on_failure: [{
-            id: #NonEmptyID
-            ...
-        }, ...]
-        ...
-    }
-    ...
+  // Other fields are allowed (open struct by default)
+  ...
+  webhook_notifications!: {
+    on_failure!: [{
+      id!: #NonEmptyID
+    }, ...]
+  }
 }
 
 targets: {
-    prod: {
-        resources: {
-            jobs: [string]: #Job
-        }
+  prod: {
+    resources: {
+      jobs: [string]: #Job
     }
+  }
 }
 

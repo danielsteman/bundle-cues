@@ -8,6 +8,10 @@ targets:
     resources:
       jobs:
         some_job:
-          webhook_notifications:
-            on_failure:
-              - id: suuuup
+          tasks:
+            - task_key: hoi
+              notebook_task:
+                notebook_path: ../hello
+          # webhook_notifications:
+          #   on_failure:
+          #     - id: suuuup
