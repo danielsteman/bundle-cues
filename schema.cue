@@ -1,5 +1,3 @@
-#NonEmptyID: string & != ""
-
 #Job: {
   // Other fields are allowed (open struct by default)
   ...
