@@ -12,3 +12,6 @@ targets:
             - task_key: hoi
               notebook_task:
                 notebook_path: ../hello
+          webhook_notifications:
+            on_failure:
+              - id: suppp

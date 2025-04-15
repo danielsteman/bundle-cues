@@ -1,19 +1,41 @@
-// #Job: {
-//   webhook_notifications: {
-//     on_failure: [{
-//       id: "sup"
-//     }]
-//   }
-//   [string]: _
-// }
-//
-// targets: {
-//   prod: {
-//     resources: {
-//       jobs: [string]: #Job
-//     }
-//   }
-// }
+#Job: {
+    name: string
+}
 
-a: 3
+#Pipeline: {
+    name: [...string]
+}
 
+#Channel: {
+    id: string
+}
+
+#Schema: {
+    include: [...string]
+    resources: {
+        jobs: {
+            [string]: #Job
+        }
+        pipelines: [...string]
+    }
+    // "a"!: string
+    targets: {
+        prod: {
+            resources: {
+                jobs!: {
+                    [string]: {
+                        webhook_notifications!: {
+                            on_failure: {
+                                [...#Channel]
+                            }
+                        }
+                        tasks: _
+                    }
+                }
+            }
+        }
+        ...
+    }
+}
+
+#Schema

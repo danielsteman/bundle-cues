@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/load"
 	"github.com/spf13/cobra"
@@ -174,13 +175,22 @@ func validate(schemaPath string) {
 		log.Fatalf("CUE build error in schema: %v", err)
 	}
 
+	defSchema := schemaVal.LookupPath(cue.ParsePath("#Schema"))
+	if !defSchema.Exists() {
+		log.Fatalf("No definition #Schema found in %s", schemaPath)
+	}
+
 	dataVal := ctx.CompileBytes(jsonBytes)
 	if err := dataVal.Err(); err != nil {
 		log.Fatalf("CUE compile error in merged data: %v", err)
 	}
 
-	result := schemaVal.Unify(dataVal)
+	result := defSchema.Unify(dataVal)
 	if err := result.Err(); err != nil {
+		log.Fatalf("Failed to unify with #Schema: %v", err)
+	}
+
+	if err := result.Validate(cue.Concrete(true)); err != nil {
 		log.Fatalf("Validation failed: %v", err)
 	}
 
@@ -204,3 +214,4 @@ can contain custom rules and constraints for your bundle.`,
 func init() {
 	rootCmd.AddCommand(validateCmd)
 }
+
