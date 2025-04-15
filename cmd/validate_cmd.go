@@ -191,7 +191,7 @@ func validate(schemaPath string) {
 	}
 
 	if err := result.Validate(cue.Concrete(true)); err != nil {
-		log.Fatalf("🏴‍☠️Validation failed: %v", err)
+		log.Fatalf("❌ Validation failed: %v", err)
 	}
 
 	fmt.Println("🦆 Validation successful!")
