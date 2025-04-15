@@ -1,18 +1,19 @@
-#Job: {
-  // Other fields are allowed (open struct by default)
-  ...
-  webhook_notifications: {
-    on_failure: [{
-      id: "sup"
-    }]
-  }
-}
+// #Job: {
+//   webhook_notifications: {
+//     on_failure: [{
+//       id: "sup"
+//     }]
+//   }
+//   [string]: _
+// }
+//
+// targets: {
+//   prod: {
+//     resources: {
+//       jobs: [string]: #Job
+//     }
+//   }
+// }
 
-targets: {
-  prod: {
-    resources: {
-      jobs: [string]: #Job
-    }
-  }
-}
+a: 3
 
