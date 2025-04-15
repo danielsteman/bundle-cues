@@ -1,9 +1,6 @@
 #Job: {
     name: string
-}
-
-#Pipeline: {
-    name: [...string]
+    ...
 }
 
 #Channel: {
@@ -16,7 +13,7 @@
         jobs: {
             [string]: #Job
         }
-        pipelines: [...string]
+        ...
     }
     // "a"!: string
     targets: {
@@ -29,13 +26,16 @@
                                 [...#Channel]
                             }
                         }
-                        tasks: _
+                        ...
                     }
                 }
+                ...
             }
+            ...
         }
         ...
     }
+    ...
 }
 
 #Schema
